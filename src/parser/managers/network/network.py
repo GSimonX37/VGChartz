@@ -5,7 +5,7 @@ from config.parser.managers.network.network import URL
 from parser.managers.network.delay import DelayManager
 
 
-class NetworkManager:
+class NetworkManager(object):
     """
     Сетевой менеджер, задачами которого являются:
 

@@ -2,7 +2,7 @@ import asyncio
 import os
 
 
-class ProgressBar:
+class ProgressBar(object):
     """
     Шкала отображения прогресса;
 
@@ -39,7 +39,7 @@ class ProgressBar:
                 f'({self.current} из {self.maximum}) - {h:02} час. {m:02} мин.')
 
 
-class OutputManager:
+class OutputManager(object):
     """
     Менеджер вывода, задачами которого являются:
 
