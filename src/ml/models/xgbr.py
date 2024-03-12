@@ -46,9 +46,9 @@ model = Pipeline(
 
 params = {
     'estimator__learning_rate': [0.1, 0.5, 1],
-    'estimator__max_depth': np.arange(2, 9, 2),
-    'estimator__n_estimators': np.arange(250, 1001, 250),
-    'estimator__max_leaves': np.arange(20, 41, 20),
-    'estimator__reg_alpha': np.linspace(0.0, 0.75, 4),
-    'estimator__reg_lambda': np.linspace(0.0, 0.75, 4),
+    'estimator__max_depth': np.arange(2, 9, 2).tolist(),
+    'estimator__n_estimators': np.arange(250, 1001, 250).tolist(),
+    'estimator__max_leaves': np.arange(20, 41, 20).tolist(),
+    'estimator__reg_alpha': np.linspace(0.0, 0.75, 4).tolist(),
+    'estimator__reg_lambda': np.linspace(0.0, 0.75, 4).tolist(),
 }
