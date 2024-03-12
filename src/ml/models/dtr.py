@@ -44,13 +44,6 @@ model = Pipeline(
 )
 
 params = {
-    'estimator__max_depth': np.arange(
-        start=2,
-        stop=21
-    ).tolist(),
-    'estimator__min_samples_split': np.arange(
-        start=2,
-        stop=21,
-        step=2
-    ).tolist(),
+    'estimator__max_depth': np.arange(2, 21).tolist(),
+    'estimator__min_samples_split': np.arange(2, 21, 2).tolist(),
 }
