@@ -133,5 +133,5 @@ def error(y_true: pd.Series,
         figure.savefig(
             fname=path + r'\error.png',
             bbox_inches='tight',
-            dpi=500
+            dpi=200
         )
