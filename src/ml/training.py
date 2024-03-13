@@ -8,23 +8,18 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.model_selection import learning_curve
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import FunctionTransformer
 
-from config.ml import FIT_CV_N_SPLITS
-from config.ml import FIT_CV_TEST_SIZE
-from config.ml import FIT_CV_VERBOSE
-from config.ml import LEARNING_CURVE_N_SPLITS
-from config.ml import LEARNING_CURVE_TEST_SIZE
+from config.ml import CV_N_SPLITS
+from config.ml import CV_TEST_SIZE
+from config.ml import CV_TRAIN_SIZE
+from config.ml import CV_VERBOSE
 from config.ml import LEARNING_CURVE_TRAIN_SIZES
-from config.ml import LEARNING_CURVE_VERBOSE
 from config.ml import N_JOBS
 from config.ml import RANDOM_STATE
 from config.ml import TEST_SIZE
 from config.paths import FILE_PREPROCESSED_PATH
 from config.paths import TRAIN_MODELS_REPORT_PATH
 from config.paths import TRAINED_MODELS_PATH
-from utils.ml.features import generate
 from utils.ml.plot.error import error
 from utils.ml.plot.scalability import scalability
 
@@ -65,18 +60,12 @@ def train(file: str, models: list) -> None:
     data.loc[:, countries] = data.loc[:, countries].fillna(0)
     data.loc[:, countries] = data.loc[:, countries] != 0.0
     data = data.sort_values(by='date').reset_index(drop=True)
-    data['date'] = data['date'].dt.year
+    data = data.drop(columns=['date'])
 
     # Разделение на выборки.
-    data = data.sort_index()
 
     x = data.drop('total', axis=1)
     y = data['total']
-
-    # Создание генератора.
-    generator = FunctionTransformer(generate)
-
-    x = generator.fit_transform(x)
 
     x_train, x_test, y_train, y_test = train_test_split(
         x,
@@ -85,6 +74,14 @@ def train(file: str, models: list) -> None:
         test_size=TEST_SIZE,
         random_state=RANDOM_STATE
     )
+
+    cv = TimeSeriesSplit(
+        n_splits=CV_N_SPLITS,
+        max_train_size=CV_TRAIN_SIZE,
+        test_size=CV_TEST_SIZE
+    )
+
+    scoring = 'neg_root_mean_squared_error'
 
     for model in models:
         name, title, model, params = (
@@ -105,12 +102,9 @@ def train(file: str, models: list) -> None:
         clf = GridSearchCV(
             estimator=model,
             param_grid=params,
-            scoring='neg_root_mean_squared_error',
-            cv=TimeSeriesSplit(
-                n_splits=FIT_CV_N_SPLITS,
-                test_size=FIT_CV_TEST_SIZE
-            ),
-            verbose=FIT_CV_VERBOSE,
+            scoring=scoring,
+            cv=cv,
+            verbose=CV_VERBOSE,
             refit=True
         )
         clf.fit(x_train, y_train)
@@ -137,18 +131,14 @@ def train(file: str, models: list) -> None:
             X=x_train,
             y=y_train,
             train_sizes=LEARNING_CURVE_TRAIN_SIZES,
-            cv=TimeSeriesSplit(
-                n_splits=LEARNING_CURVE_N_SPLITS,
-                test_size=LEARNING_CURVE_TEST_SIZE
-            ),
+            cv=cv,
             n_jobs=N_JOBS,
             scoring='neg_root_mean_squared_error',
             return_times=True,
-            verbose=LEARNING_CURVE_VERBOSE
+            verbose=CV_VERBOSE
         )
 
-        x_train_size = x_train.shape[0]
-        x_train_size -= LEARNING_CURVE_TEST_SIZE * LEARNING_CURVE_N_SPLITS
+        x_train_size = CV_TRAIN_SIZE
         scalability(
             train_sizes=pd.Series((train_sizes / x_train_size * 100).round(1)),
             train_scores=pd.DataFrame(train_scores),
@@ -173,11 +163,7 @@ def train(file: str, models: list) -> None:
         if not os.path.exists(path):
             os.mkdir(path)
 
-        model = Pipeline(
-            steps=[
-                ('generator', generator),
-                ('model', clf.best_estimator_)]
-        )
+        model = clf.best_estimator_
 
         # Сохранение модели в joblib-файл.
         joblib.dump(
