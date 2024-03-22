@@ -82,7 +82,7 @@ class FileManager(object):
         """
 
         path = fr'{CHECKPOINT_PATH}\{checkpoint}'
-        with open(path, 'r') as file:
+        with open(path) as file:
             return json.loads(file.read())
 
     def delete(self) -> None:
@@ -115,7 +115,7 @@ class FileManager(object):
             self.create()
         elif mode == 'a':
             path = fr'{FILE_RAW_PATH}\{file}'
-            with open(path, 'r', newline='', encoding='utf-8') as file:
+            with open(path, newline='', encoding='utf-8') as file:
                 rows = csv.reader(file, delimiter=',')
                 self.records = sum([1 for _ in rows]) - 1
 

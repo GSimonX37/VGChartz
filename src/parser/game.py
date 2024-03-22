@@ -39,11 +39,7 @@ class Game(object):
         self.user: float | None = None
 
     def __bool__(self):
-        for attribute in self.__dict__:
-            if getattr(self, attribute):
-                return True
-
-        return False
+        return any(getattr(self, attribute) for attribute in self.__dict__)
 
     def csv(self) -> list:
         """

@@ -421,9 +421,8 @@ class ParsingManager(object):
                   .replace(')', '')
                   .replace(',', ''))
 
-        if int(number) % 50 == 0:
-            number = int(number) // 50
-        else:
-            number = int(number) // 50 + 1
+        number = (int(number) // 50
+                  if int(number) % 50 == 0
+                  else int(number) // 50 + 1)
 
         return number
