@@ -20,8 +20,7 @@ from config.ml import TEST_SIZE
 from config.paths import FILE_PREPROCESSED_PATH
 from config.paths import TRAIN_MODELS_REPORT_PATH
 from config.paths import TRAINED_MODELS_PATH
-from utils.ml.plot.error import error
-from utils.ml.plot.scalability import scalability
+from utils import plot
 
 
 def train(file: str, models: list) -> None:
@@ -139,7 +138,7 @@ def train(file: str, models: list) -> None:
         )
 
         x_train_size = CV_TRAIN_SIZE
-        scalability(
+        plot.scalability(
             train_sizes=pd.Series((train_sizes / x_train_size * 100).round(1)),
             train_scores=pd.DataFrame(train_scores),
             test_scores=pd.DataFrame(test_scores),
@@ -152,7 +151,7 @@ def train(file: str, models: list) -> None:
         # Проверка на тестовой выборке
         predict = clf.predict(x_test)
 
-        error(
+        plot.error(
             y_true=pd.Series(y_test),
             y_predict=pd.Series(predict),
             title=f'Ошибки прогнозирования регрессионной модели {title}',
