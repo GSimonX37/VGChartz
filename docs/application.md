@@ -1,5 +1,9 @@
 # Запуск приложения
 
+Вы можете запустить приложение непосредственно из текущего окружения 
+или в контейнере Docker.
+
+## Запуск приложения
 Точка входа запуска приложения находится в файле 
 [application.py](../src/application.py):
 
@@ -95,5 +99,35 @@ print(r.content.decode('utf-8'))
 7. japan: продажи в Японии (True / False).
 8. other: продажи в остальном Мире (True / False).
 9. sales: количество проданных копий видеоигры.
+
+## Запуск приложения в контейнере Docker
+
+Чтобы запустить приложение в контейнере Docker необходимо создать образ из файла 
+[Dockerfile](../Dockerfile):
+
+```
+FROM python:3.10
+
+COPY ./requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir --upgrade -r ./requirements.txt
+
+COPY ./models/lgbmr ./models/lgbmr
+COPY ./src/app ./app
+COPY ./src/run.py .
+
+CMD ["python", "run.py", "lgbmr"]
+```
+
+Чтобы создать образ, необходимо выполнить следующую команду:
+
+```commandline
+docker build -t application .
+```
+
+После создания образа необходимо запустить приложение в контейнере:
+
+```commandline
+docker run -d --name heart-disease-serving -p 8000:8000 application
+```
 
 [К описанию проекта](../README.md)
