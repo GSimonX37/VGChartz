@@ -1,8 +1,9 @@
 import os
+
 import pandas as pd
 
-from config.paths import FILE_RAW_PATH
 from config.paths import FILE_PREPROCESSED_PATH
+from config.paths import FILE_RAW_PATH
 from utils.data import prepare
 from utils.explorer import explorer
 
