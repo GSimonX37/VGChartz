@@ -94,10 +94,10 @@ def scalability(train_sizes: pd.Series,
     )
     # Определяем подписи для осей.
     figure.axes[0].set_xlabel('Размер выборки (%)')
-    figure.axes[0].set_ylabel('Отрицательная среднеквадратическая ошибка')
+    figure.axes[0].set_ylabel('Среднеквадратическая ошибка')
     # Определяем подписи значений для оси.
-    figure.axes[0].set_yticks(np.linspace(-0.5, -0.1, 5).round(1))
-    figure.axes[0].set_ylim((-0.5, -0.1))
+    figure.axes[0].set_yticks(np.linspace(0.1, 0.25, 4).round(2))
+    figure.axes[0].set_ylim((0.1, 0.25))
     figure.axes[0].set_xticks(np.arange(0, 101, 5))
     figure.axes[0].set_xlim((-1, 101))
     # Определяем подписи значений маркеров.
@@ -124,7 +124,7 @@ def scalability(train_sizes: pd.Series,
         )
     # Определяем легенду.
     figure.axes[0].legend(
-        title='Отрицательная среднеквадратическая ошибка',
+        title='Среднеквадратическая ошибка',
         loc='lower right',
         alignment='left'
     )
@@ -229,7 +229,7 @@ def scalability(train_sizes: pd.Series,
     )
     # Определяем подписи для осей.
     figure.axes[3].set_xlabel('Время обучения (сек.)')
-    figure.axes[3].set_ylabel('Отрицательная среднеквадратическая ошибка')
+    figure.axes[3].set_ylabel('Среднеквадратическая ошибка')
     # Определяем подписи значений маркеров.
     for x, y in zip(fit_times.mean(axis=1), test_scores.mean(axis=1)):
         value = round(y, 2)
@@ -270,7 +270,7 @@ def scalability(train_sizes: pd.Series,
     )
     # Определяем подписи для осей.
     figure.axes[4].set_xlabel('Время предсказания (сек.)')
-    figure.axes[4].set_ylabel('Отрицательная среднеквадратическая ошибка')
+    figure.axes[4].set_ylabel('Среднеквадратическая ошибка')
     # Определяем подписи значений маркеров.
     for x, y in zip(score_times.mean(axis=1), test_scores.mean(axis=1)):
         value = round(y, 2)

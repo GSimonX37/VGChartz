@@ -10,6 +10,7 @@ from sklearn.metrics import root_mean_squared_error
 def error(y_true: pd.Series,
           y_predict: pd.Series,
           title: str,
+          name: str = 'metrics',
           path: str = None) -> None:
     """
     Строит график ошибок регрессионной модели;
@@ -17,6 +18,7 @@ def error(y_true: pd.Series,
     :param y_true: фактические значения целевой переменной;
     :param y_predict: прогнозируемые значения целевой переменной;
     :param title: заголовок графика;
+    :param name: имя файла;
     :param path: имя директории, в которую необходимо сохранить график;
     :return: None.
     """
@@ -131,7 +133,7 @@ def error(y_true: pd.Series,
     # Сохраняем фигуру в файл.
     if path:
         figure.savefig(
-            fname=path + r'\error.png',
+            fname=path + fr'\{name}.png',
             bbox_inches='tight',
             dpi=200
         )
