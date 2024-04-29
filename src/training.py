@@ -1,5 +1,7 @@
 import os
 
+import pandas as pd
+
 from config.paths import FILE_PREPROCESSED_PATH
 from config.paths import MODELS_PATH
 from ml.training import train
@@ -15,13 +17,19 @@ def main():
 
     names = explorer(FILE_PREPROCESSED_PATH, '*.csv')
     os.system('cls')
-    print('Список предобработанных файлов:', names, sep='\n', flush=True)
+    print('Список предобработанных файлов:', names,
+          sep='\n',
+          flush=True)
 
-    if data := input('Выберите файл: '):
-        models = []
+    if name := input('Выберите файл: '):
+        data = pd.read_csv(f'{FILE_PREPROCESSED_PATH}/{name}')
+
+        models = {}
 
         print(flush=True)
-        names = explorer(MODELS_PATH, '*.py')
+        names = explorer(path=MODELS_PATH,
+                         ext='*.py',
+                         exclude=('__init__.py', 'model.py'))
         print('Список файлов c моделями:', names, sep='\n', flush=True)
 
         if files := input('Выберите один или несколько файлов: '):
@@ -32,20 +40,17 @@ def main():
                     name=f'ml.models.{name}',
                     globals=globals(),
                     locals=locals(),
-                    fromlist=['title', 'model', 'params'],
+                    fromlist=['model'],
                     level=0
                 )
 
-                models.append(
-                    {
-                        'name': name,
-                        'title': modul.title,
-                        'model': modul.model,
-                        'params': modul.params,
-                    }
-                )
+                models[name] = modul.model
 
-        train(file=data, models=models)
+        train(
+            models=models,
+            data=data,
+            n_trials=2
+        )
 
 
 if __name__ == '__main__':
