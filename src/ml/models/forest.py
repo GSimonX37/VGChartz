@@ -1,10 +1,10 @@
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import HistGradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import TargetEncoder
+from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import make_scorer
-from sklearn.model_selection import TimeSeriesSplit
 
 from .model import Model
 from config.ml import RANDOM_STATE
@@ -35,7 +35,7 @@ standardizer = ColumnTransformer(
 )
 
 
-estimator = HistGradientBoostingRegressor(
+estimator = RandomForestRegressor(
     random_state=RANDOM_STATE
 )
 
@@ -47,24 +47,18 @@ pipeline = Pipeline(
 )
 
 params = {
-    'estimator__learning_rate': ['float', {'low': 0.1,
-                                           'high': 1.0,
-                                           'step': 0.05}],
+    'estimator__n_estimators': ['int', {'low': 50,
+                                        'high': 500,
+                                        'step': 50}],
     'estimator__max_depth': ['int', {'low': 1,
                                      'high': 50,
                                      'step': 1}],
-    'estimator__max_iter': ['int', {'low': 50,
-                                    'high': 500,
-                                    'step': 50}],
-    'estimator__max_leaf_nodes': ['int', {'low': 2,
-                                          'high': 50,
-                                          'step': 2}],
+    'estimator__min_samples_split': ['int', {'low': 2,
+                                             'high': 50,
+                                             'step': 2}],
     'estimator__min_samples_leaf': ['int', {'low': 2,
                                             'high': 50,
-                                            'step': 2}],
-    'estimator__l2_regularization': ['float', {'low': 0.0,
-                                               'high': 1.0,
-                                               'step': 0.05}],
+                                            'step': 2}]
 }
 
 scoring = make_scorer(
@@ -81,7 +75,7 @@ cv = TimeSeriesSplit(
 
 pipeline = Model(
     pipeline=pipeline,
-    name='HistGradientBoostingRegressor',
+    name='RandomForestRegressor',
     params=params,
     metric=mean_squared_error,
     scoring=scoring,
