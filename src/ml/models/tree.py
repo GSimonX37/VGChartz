@@ -1,16 +1,17 @@
 from sklearn.compose import ColumnTransformer
+from sklearn.metrics import make_scorer
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import TimeSeriesSplit
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import TargetEncoder
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import make_scorer
-from sklearn.model_selection import TimeSeriesSplit
+
+from config.ml import CV_N_SPLITS
+from config.ml import CV_TEST_SIZE
+from config.ml import CV_TRAIN_SIZE
+from config.ml import RANDOM_STATE
 
 from .model import Model
-from config.ml import RANDOM_STATE
-from config.ml import CV_N_SPLITS
-from config.ml import CV_TRAIN_SIZE
-from config.ml import CV_TEST_SIZE
 
 
 category = [
@@ -56,8 +57,7 @@ params = {
 }
 
 scoring = make_scorer(
-    score_func=mean_squared_error,
-    zero_division=0.0
+    score_func=root_mean_squared_error
 )
 
 cv = TimeSeriesSplit(
@@ -67,11 +67,11 @@ cv = TimeSeriesSplit(
 )
 
 
-pipeline = Model(
+model = Model(
     pipeline=pipeline,
     name='DecisionTreeRegressor',
     params=params,
-    metric=mean_squared_error,
+    metric=root_mean_squared_error,
     scoring=scoring,
     cv=cv
 )
