@@ -6,6 +6,8 @@
 ```python
 import os
 
+import pandas as pd
+
 from config.paths import FILE_PREPROCESSED_PATH
 from config.paths import MODELS_PATH
 from ml.training import train
@@ -21,13 +23,19 @@ def main():
 
     names = explorer(FILE_PREPROCESSED_PATH, '*.csv')
     os.system('cls')
-    print('Список предобработанных файлов:', names, sep='\n', flush=True)
+    print('Список предобработанных файлов:', names,
+          sep='\n',
+          flush=True)
 
-    if data := input('Выберите файл: '):
-        models = []
+    if name := input('Выберите файл: '):
+        data = pd.read_csv(f'{FILE_PREPROCESSED_PATH}/{name}')
+
+        models = {}
 
         print(flush=True)
-        names = explorer(MODELS_PATH, '*.py')
+        names = explorer(path=MODELS_PATH,
+                         ext='*.py',
+                         exclude=('__init__.py', 'model.py'))
         print('Список файлов c моделями:', names, sep='\n', flush=True)
 
         if files := input('Выберите один или несколько файлов: '):
@@ -35,23 +43,20 @@ def main():
                 name = file.split('.')[0]
 
                 modul = __import__(
-                    name=f'training.models.{name}',
+                    name=f'ml.models.{name}',
                     globals=globals(),
                     locals=locals(),
-                    fromlist=['title', 'model', 'params'],
+                    fromlist=['model'],
                     level=0
                 )
 
-                models.append(
-                    {
-                        'name': name,
-                        'title': modul.title,
-                        'model': modul.model,
-                        'params': modul.params,
-                    }
-                )
+                models[name] = modul.model
 
-        train(file=data, models=models)
+        train(
+            models=models,
+            data=data,
+            n_trials=250
+        )
 
 
 if __name__ == '__main__':
@@ -63,33 +68,43 @@ if __name__ == '__main__':
 Чтобы начать процесс тренировки моделей, необходимо запустить данный файл. 
 Программа отобразит содержимое каталога [processed](../data/processed), 
 где хранятся файлы, сформированные на этапе предварительной обработки данных 
-(см. [Предварительная обработка данных](preprocessing.md)).
+(см. [Предварительная обработка данных](preprocessing.md)). Необходимо выбрать файл 
+с данными, на которых модель будет обучаться.
 
 ![file](../resources/training/file.jpg)
 
 После выбора данных, на которых будет проводиться тренировка, 
 необходимо выбрать одну или несколько моделей. 
 
-![file](../resources/training/models.jpg)
+![models](../resources/training/models.jpg)
 
 Все модели должны располагаться в каталоге [models](../src/ml/models), 
-с расширением `*.py` и иметь следующее содержимое:
-1. title - заголовок, который будет использован при построении отчетов.
-2. model - модель машинного обучения.
-3. params - гиперпараметры модели.
+с расширением `*.py` и содержать экземпляр класса `Model` 
+в котором содержатся:
+1. model: pipeline модели;
+2. name: название модели, которое будет отображаться на графиках;
+3. params: пространство гиперпараметров, подбор которых будет осуществляться 
+с помощью пакета [Optuna](https://optuna.org).
+4. metric: функция оценки модели на тестовой выборке.
+5. scoring: функция оценки модели во время кросс валидации.
+6. cv: метод кросс валидации.
 
 ```python
-import numpy as np
-
+from lightgbm import LGBMRegressor
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import make_scorer
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import TimeSeriesSplit
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import TargetEncoder
 
+from config.ml import CV_N_SPLITS
+from config.ml import CV_TEST_SIZE
+from config.ml import CV_TRAIN_SIZE
 from config.ml import RANDOM_STATE
 
+from .model import Model
 
-title = 'RandomForestRegressor'
 
 category = [
     'platform',
@@ -113,11 +128,12 @@ standardizer = ColumnTransformer(
 )
 
 
-estimator = RandomForestRegressor(
-    random_state=RANDOM_STATE
+estimator = LGBMRegressor(
+    random_state=RANDOM_STATE,
+    verbosity=-1
 )
 
-model = Pipeline(
+pipeline = Pipeline(
     steps=[
         ('standardizer', standardizer),
         ('estimator', estimator),
@@ -125,21 +141,77 @@ model = Pipeline(
 )
 
 params = {
-    'estimator__max_depth': np.arange(
-        start=2,
-        stop=21
-    ).tolist(),
-    'estimator__min_samples_split': np.arange(
-        start=2,
-        stop=11,
-        step=2
-    ).tolist(),
-    'estimator__min_samples_leaf': np.arange(
-        start=1,
-        stop=10,
-        step=2
-    ).tolist()
+    'estimator__learning_rate': ['float', {'low': 0.1,
+                                           'high': 1.0,
+                                           'step': 0.05}],
+    'estimator__max_depth': ['int', {'low': 1,
+                                     'high': 50,
+                                     'step': 1}],
+    'estimator__n_estimators': ['int', {'low': 50,
+                                        'high': 500,
+                                        'step': 50}],
+    'estimator__num_leaves': ['int', {'low': 2,
+                                      'high': 50,
+                                      'step': 2}],
+    'estimator__reg_alpha': ['float', {'low': 0.0,
+                                       'high': 1.0,
+                                       'step': 0.05}],
+    'estimator__reg_lambda': ['float', {'low': 0.0,
+                                        'high': 1.0,
+                                        'step': 0.05}],
 }
+
+scoring = make_scorer(
+    score_func=root_mean_squared_error
+)
+
+cv = TimeSeriesSplit(
+    n_splits=CV_N_SPLITS,
+    max_train_size=CV_TRAIN_SIZE,
+    test_size=CV_TEST_SIZE
+)
+
+
+model = Model(
+    pipeline=pipeline,
+    name='LGBMRegressor',
+    params=params,
+    metric=root_mean_squared_error,
+    scoring=scoring,
+    cv=cv
+)
+```
+
+Количество испытаний можно задать с помощью параметра `n_trials`. Обычно хватает 
+200-300 испытаний для нахождения оптимальных гиперпараметров.
+
+```python
+train(
+    models=models,
+    data=data,
+    n_trials=250
+)
+```
+
+Изменить структуру и формат отображения прогресса обучения моделей, можно в 
+файле [verbose.py](../src/utils/ml/verbose.py), путем модификации метода 
+`__call__` класса `Verbose`:
+
+```python
+def __call__(self, study: Study, trial: FrozenTrial):
+    index = trial.number + 1
+    state = trial.state.name
+    complete = (trial
+                .datetime_complete
+                .strftime('%d-%m-%Y %H:%M:%S'))
+    seconds = (trial.datetime_complete - trial.datetime_start).seconds
+    minutes = seconds // 60
+    seconds = seconds % 60
+    value = round(trial.values[0], 4)
+    best = round(study.best_value, 4)
+
+    print(f'{self.name}: [{complete}] - [{minutes:02}:{seconds:02}] - '
+          f'{state}: {index}/{self.trials} - {value:.4f} ({best:.4f}).')
 ```
 
 ## Оценка моделей
@@ -162,11 +234,14 @@ params = {
 В каталоге `images` будут содержаться следующие файлы:
 - `scalability.png` - масштабируемость модели;
 - `error.png` - ошибки прогнозирования регрессионной модели.
+- `dummy.png` - ошибки прогнозирования простой эмпирической модели.
 
 Примеры графических материалов, сформированных по результатам тренировки модели:
 
-![words](../resources/training/scalability.png)
+![scalability](../resources/training/scalability.png)
 
-![words](../resources/training/error.png)
+![metrics](../resources/training/metrics.png)
+
+![dummy](../resources/training/dummy.png)
 
 [К описанию проекта](../README.md)
