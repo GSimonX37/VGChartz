@@ -137,3 +137,5 @@ def error(y_true: pd.Series,
             bbox_inches='tight',
             dpi=200
         )
+
+    plt.close(figure)
