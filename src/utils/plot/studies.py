@@ -48,10 +48,10 @@ def studies(trials: pd.DataFrame,
 
     order = (trials
              .groupby('job')['best']
-             .max()
+             .min()
              .sort_values()
              .index
-             .to_list()[::-1])
+             .to_list())
     trials['target'] = trials['job'] == order[0]
 
     sns.lineplot(
@@ -70,13 +70,13 @@ def studies(trials: pd.DataFrame,
     # Определяем стиль графика 1.
     # Определяем заголовок.
     figure.axes[0].set_title(
-        label='Зависимость метрики F1-weighted от испытания',
+        label='Зависимость метрики RMSE от испытания',
         fontsize='large',
         y=1.035
     )
 
     figure.axes[0].set_xlabel('Номер испытания')
-    figure.axes[0].set_ylabel('Метрика F1-weighted')
+    figure.axes[0].set_ylabel('Метрика RMSE')
     # Определяем подписи значений для оси.
     s, m = step(trials['index'].max())
     figure.axes[0].set_xticks(np.arange(1, m, s))
@@ -89,15 +89,15 @@ def studies(trials: pd.DataFrame,
                for j, v
                in (trials
                    .groupby('job')['best']
-                   .max()
+                   .min()
                    .sort_values()
-                   .items())][::-1]
+                   .items())]
 
     figure.axes[0].legend(
         handles=figure.axes[0].get_legend_handles_labels()[0],
         labels=labels,
-        title='Значения метрики (F1-weighted)',
-        loc='lower right',
+        title='Значения метрики (RMSE)',
+        loc='upper right',
         alignment='left'
     )
 
@@ -117,13 +117,13 @@ def studies(trials: pd.DataFrame,
     # Определяем стиль графика 2.
     # Определяем заголовок.
     figure.axes[1].set_title(
-        label='Зависимость лучшей метрики F1-weighted от испытания',
+        label='Зависимость лучшей метрики RMSE от испытания',
         fontsize='large',
         y=1.035
     )
 
     figure.axes[1].set_xlabel('Номер испытания')
-    figure.axes[1].set_ylabel('Максимальное значение метрики F1-weighted')
+    figure.axes[1].set_ylabel('Максимальное значение метрики RMSE')
     # Определяем подписи значений для оси.
     s, m = step(trials['index'].max())
     figure.axes[1].set_xticks(np.arange(1, m, s))
@@ -132,8 +132,8 @@ def studies(trials: pd.DataFrame,
     figure.axes[1].legend(
         handles=figure.axes[1].get_legend_handles_labels()[0],
         labels=labels,
-        title='Значения метрики (F1-weighted)',
-        loc='lower right',
+        title='Значения метрики (RMSE)',
+        loc='upper right',
         alignment='left'
     )
 
