@@ -55,7 +55,8 @@ def main():
         train(
             models=models,
             data=data,
-            n_trials=250
+            n_trials=300,
+            n_jobs=4
         )
 
 
@@ -90,13 +91,13 @@ if __name__ == '__main__':
 6. cv: метод кросс валидации.
 
 ```python
-from lightgbm import LGBMRegressor
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import make_scorer
 from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import TargetEncoder
+from xgboost import XGBRegressor
 
 from config.ml import CV_N_SPLITS
 from config.ml import CV_TEST_SIZE
@@ -128,9 +129,9 @@ standardizer = ColumnTransformer(
 )
 
 
-estimator = LGBMRegressor(
+estimator = XGBRegressor(
     random_state=RANDOM_STATE,
-    verbosity=-1
+    verbosity=0
 )
 
 pipeline = Pipeline(
@@ -150,7 +151,7 @@ params = {
     'estimator__n_estimators': ['int', {'low': 50,
                                         'high': 500,
                                         'step': 50}],
-    'estimator__num_leaves': ['int', {'low': 2,
+    'estimator__max_leaves': ['int', {'low': 2,
                                       'high': 50,
                                       'step': 2}],
     'estimator__reg_alpha': ['float', {'low': 0.0,
@@ -174,7 +175,7 @@ cv = TimeSeriesSplit(
 
 model = Model(
     pipeline=pipeline,
-    name='LGBMRegressor',
+    name='XGBRegressor',
     params=params,
     metric=root_mean_squared_error,
     scoring=scoring,
@@ -185,20 +186,20 @@ model = Model(
 Количество испытаний можно задать с помощью параметра `n_trials`. Обычно хватает 
 200-300 испытаний для нахождения оптимальных гиперпараметров.
 
-```python
-train(
-    models=models,
-    data=data,
-    n_trials=250
-)
-```
-
 Изменить структуру и формат отображения прогресса обучения моделей, можно в 
 файле [verbose.py](../src/utils/ml/verbose.py), путем модификации метода 
 `__call__` класса `Verbose`:
 
 ```python
-def __call__(self, study: Study, trial: FrozenTrial):
+def __call__(self, study: Study, trial: FrozenTrial) -> None:
+    """
+    Вызывается после каждого испытания;
+
+    :param study: задача оптимизации - совокупность испытаний;
+    :param trial: крайнее испытание;
+    :return: None.
+    """
+
     index = trial.number + 1
     state = trial.state.name
     complete = (trial
@@ -210,7 +211,8 @@ def __call__(self, study: Study, trial: FrozenTrial):
     value = round(trial.values[0], 4)
     best = round(study.best_value, 4)
 
-    print(f'{self.name}: [{complete}] - [{minutes:02}:{seconds:02}] - '
+    print(f'{self.name} [{self.n_job}]: '
+          f'[{complete}] - [{minutes:02}:{seconds:02}] - '
           f'{state}: {index}/{self.trials} - {value:.4f} ({best:.4f}).')
 ```
 
@@ -226,15 +228,16 @@ def __call__(self, study: Study, trial: FrozenTrial):
 В каталоге [training](../reports/training) будет создан каталог 
 с названием файла модели, указанного перед началом тренировки. 
 В папке будут находиться: 
-1. Файл `best_params.json` - гиперпараметры модели, 
+1. Файл `params.json` - гиперпараметры модели, 
 при которых предсказательная способность модели была наилучшей.
-2. Файл `cv_results.csv` - результаты кросс-валидации.
+2. Файл `trials.csv` - результаты кросс-валидации.
 3. Каталог `images` - графические материалы.
 
 В каталоге `images` будут содержаться следующие файлы:
 - `scalability.png` - масштабируемость модели;
 - `error.png` - ошибки прогнозирования регрессионной модели.
 - `dummy.png` - ошибки прогнозирования простой эмпирической модели.
+- `studies.png` - исследование пространства гиперпараметров.
 
 Примеры графических материалов, сформированных по результатам тренировки модели:
 
@@ -243,5 +246,7 @@ def __call__(self, study: Study, trial: FrozenTrial):
 ![metrics](../resources/training/metrics.png)
 
 ![dummy](../resources/training/dummy.png)
+
+![studies](../resources/training/studies.png)
 
 [К описанию проекта](../README.md)
